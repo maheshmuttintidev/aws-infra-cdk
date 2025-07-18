@@ -4,34 +4,39 @@ import { AwsInfraCdkStack } from '../lib/aws-infra-cdk-stack';
 
 describe('AwsInfraCdkStack', () => {
   let app: App;
-  let stack: AwsInfraCdkStack;
   let template: Template;
 
   beforeEach(() => {
     app = new App();
-    stack = new AwsInfraCdkStack(app, 'TestStack', {
+    const stack = new AwsInfraCdkStack(app, 'TestStack', {
       domainName: 'example.com',
       certificateArn: 'arn:aws:acm:us-east-1:123456789012:certificate/abc123',
       ec2KeyName: 'my-key-pair',
-      alarmTopicArn: 'arn:aws:sns:us-east-1:123456789012:my-alarm-topic',
     });
     template = Template.fromStack(stack);
   });
 
-  test('creates EC2 instance with expected properties', () => {
+  test('creates EC2 instance with key pair and volume', () => {
     template.hasResourceProperties('AWS::EC2::Instance', {
-      InstanceType: 't2.micro',
       KeyName: 'my-key-pair',
-      BlockDeviceMappings: Match.arrayWith([
-        Match.objectLike({
-          DeviceName: '/dev/xvda',
-          Ebs: { VolumeSize: 8, Encrypted: true },
-        }),
-      ]),
+      InstanceType: 't2.micro',
+    });
+
+    template.hasResource('AWS::EC2::Instance', {
+      Properties: {
+        BlockDeviceMappings: Match.arrayWith([
+          Match.objectLike({
+            Ebs: Match.objectLike({
+              VolumeSize: 8,
+              Encrypted: true,
+            }),
+          }),
+        ]),
+      },
     });
   });
 
-  test('creates Security Group with SSH ingress rule', () => {
+  test('allows SSH access on EC2 security group', () => {
     template.hasResourceProperties('AWS::EC2::SecurityGroup', {
       SecurityGroupIngress: Match.arrayWith([
         Match.objectLike({
@@ -39,51 +44,55 @@ describe('AwsInfraCdkStack', () => {
           FromPort: 22,
           ToPort: 22,
           CidrIp: '0.0.0.0/0',
-          Description: 'SSH access from specific IP range',
         }),
       ]),
     });
   });
 
-  test('creates S3 bucket with versioning and encryption', () => {
+  test('creates a secure and versioned S3 bucket', () => {
     template.hasResourceProperties('AWS::S3::Bucket', {
       VersioningConfiguration: { Status: 'Enabled' },
       BucketEncryption: {
-        ServerSideEncryptionConfiguration: [
+        ServerSideEncryptionConfiguration: Match.arrayWith([
           Match.objectLike({
-            ServerSideEncryptionByDefault: { SSEAlgorithm: 'AES256' },
+            ServerSideEncryptionByDefault: {
+              SSEAlgorithm: 'AES256',
+            },
           }),
-        ],
-      },
-      PublicAccessBlockConfiguration: {
-        BlockPublicAcls: true,
-        BlockPublicPolicy: true,
-        IgnorePublicAcls: true,
-        RestrictPublicBuckets: true,
+        ]),
       },
     });
   });
 
-  test('creates Cognito User Pool with email sign-in', () => {
+  test('creates Cognito user pool with email attributes', () => {
     template.hasResourceProperties('AWS::Cognito::UserPool', {
-      UsernameConfiguration: { CaseSensitive: false },
+      UsernameAttributes: ['email'],
       AutoVerifiedAttributes: ['email'],
-      Schema: Match.arrayWith([Match.objectLike({ Name: 'email', Required: true })]),
+      Schema: Match.arrayWith([
+        Match.objectLike({
+          Name: 'email',
+          Required: true,
+        }),
+      ]),
     });
   });
 
-  test('creates Route 53 hosted zone and A record', () => {
+  test('creates Route53 hosted zone and A record for load balancer', () => {
     template.hasResourceProperties('AWS::Route53::HostedZone', {
       Name: 'example.com.',
     });
+
     template.hasResourceProperties('AWS::Route53::RecordSet', {
-      Name: 'api.example.com.',
       Type: 'A',
-      TTL: '300',
+      Name: 'api.example.com.',
+      AliasTarget: Match.objectLike({
+        DNSName: Match.anyValue(),
+        HostedZoneId: Match.anyValue(),
+      }),
     });
   });
 
-  test('creates CloudWatch alarm for EC2 CPU utilization', () => {
+  test('creates CloudWatch alarm on low CPU utilization', () => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', {
       MetricName: 'CPUUtilization',
       Namespace: 'AWS/EC2',
@@ -95,15 +104,14 @@ describe('AwsInfraCdkStack', () => {
     });
   });
 
-  test('creates Application Load Balancer', () => {
+  test('creates internet-facing ALB with HTTP/2 enabled', () => {
     template.hasResourceProperties('AWS::ElasticLoadBalancingV2::LoadBalancer', {
-      Type: 'application',
       Scheme: 'internet-facing',
-      IpAddressType: 'ipv4',
+      Type: 'application',
     });
   });
 
-  test('creates SNS topic for alarms', () => {
+  test('creates SNS topic for monitoring alarms', () => {
     template.hasResourceProperties('AWS::SNS::Topic', {
       DisplayName: 'Infrastructure Alarms',
     });

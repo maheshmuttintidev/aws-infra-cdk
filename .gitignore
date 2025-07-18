@@ -39,3 +39,6 @@ coverage/
 # OS files
 *.pid
 *.seed
+
+# build
+dist/

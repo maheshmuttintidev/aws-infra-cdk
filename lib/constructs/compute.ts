@@ -5,6 +5,7 @@ import {
   InstanceClass,
   InstanceSize,
   InstanceType,
+  KeyPair,
   Peer,
   Port,
   SecurityGroup,
@@ -44,9 +45,12 @@ export class ComputeConstruct extends Construct {
       vpc: this.vpc,
       instanceType: InstanceType.of(InstanceClass.T2, InstanceSize.MICRO),
       machineImage: new AmazonLinuxImage(),
+      keyPair: props.keyName
+        ? KeyPair.fromKeyPairName(this, 'KeyPair', props.keyName)
+        : undefined,
       securityGroup: sg,
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
-      keyName: props.keyName || process.env.EC2_KEY_NAME,
+      // keyName: props.keyName || process.env.EC2_KEY_NAME,
       blockDevices: [
         {
           deviceName: '/dev/xvda',

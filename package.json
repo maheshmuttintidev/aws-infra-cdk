@@ -25,7 +25,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
-    "test": "jest",
+    "test": "jest --config=jest.config.ts",
     "cdk:bootstrap": "cdk bootstrap",
     "cdk:deploy": "cdk deploy",
     "cdk:diff": "cdk diff",
