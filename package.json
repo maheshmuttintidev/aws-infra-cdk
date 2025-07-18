@@ -1,0 +1,71 @@
+{
+  "name": "aws-infra-cdk",
+  "version": "1.0.0",
+  "description": "Full infra management in CDK with TypeScript",
+  "keywords": [
+    "AWS",
+    "CDK",
+    "Infra"
+  ],
+  "homepage": "https://github.com/maheshmuttintidev/aws-infra-cdk#readme",
+  "bugs": {
+    "url": "https://github.com/maheshmuttintidev/aws-infra-cdk/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maheshmuttintidev/aws-infra-cdk.git"
+  },
+  "license": "MIT",
+  "author": "maheshmuttintidev",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --build",
+    "watch": "tsc --build --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write .",
+    "test": "jest",
+    "cdk:bootstrap": "cdk bootstrap",
+    "cdk:deploy": "cdk deploy",
+    "cdk:diff": "cdk diff",
+    "prepare": "husky install",
+    "precommit": "lint-staged",
+    "init:infra": "tsc --noEmit && node --loader ts-node/esm init-infra.ts"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "npm run lint:fix",
+      "npm run format",
+      "git add"
+    ]
+  },
+  "dependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.14",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "aws-cdk-lib": "^2.206.0",
+    "chalk": "^5.4.1",
+    "constructs": "^10.4.2",
+    "dotenv": "^17.2.0",
+    "eslint-cdk-plugin": "^3.1.0",
+    "eslint-plugin-prettier": "^5.5.1",
+    "fs-extra": "^11.3.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "lint-staged": "^16.1.2",
+    "ora": "^8.2.0",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.1",
+    "eslint-plugin-cdk": "^1.8.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "typescript-eslint": "^8.37.0"
+  }
+}
